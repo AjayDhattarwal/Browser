@@ -28,22 +28,22 @@ Browser is a lightweight, open-source web browsing app powered by Android's WebV
 ## Screenshots
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/AjayDhattarwal/Browser/refs/heads/master/assets/screenshots/Screenshot_1.png" width="200" />
-  <img src="https://raw.githubusercontent.com/AjayDhattarwal/Browser/refs/heads/master/assets/screenshots/Screenshot_2.png" width="200" />
-  <img src="https://raw.githubusercontent.com/AjayDhattarwal/Browser/refs/heads/master/assets/screenshots/Screenshot_3.png" width="200" />
-  <img src="https://raw.githubusercontent.com/AjayDhattarwal/Browser/refs/heads/master/assets/screenshots/Screenshot_4.png" width="200" />
-  <img src="https://raw.githubusercontent.com/AjayDhattarwal/Browser/refs/heads/master/assets/screenshots/Screenshot_5.png" width="400" />
-  <img src="https://raw.githubusercontent.com/AjayDhattarwal/Browser/refs/heads/master/assets/screenshots/Screenshot_6.png" width="400" />
-  <img src="https://raw.githubusercontent.com/AjayDhattarwal/Browser/refs/heads/master/assets/screenshots/Screenshot_7.png" width="400" />
-  <img src="https://raw.githubusercontent.com/AjayDhattarwal/Browser/refs/heads/master/assets/screenshots/Screenshot_8.png" width="400" />
-  <img src="https://raw.githubusercontent.com/AjayDhattarwal/Browser/refs/heads/master/assets/screenshots/Screenshot_9.png" width="400" />
-  <img src="https://raw.githubusercontent.com/AjayDhattarwal/Browser/refs/heads/master/assets/gif/gif_1.gif" width="200" />
+  <img src="https://raw.githubusercontent.com/AjayDhattarwal/Browser/refs/heads/main/assets/screenshots/Screenshot_1.png" width="200" />
+  <img src="https://raw.githubusercontent.com/AjayDhattarwal/Browser/refs/heads/main/assets/screenshots/Screenshot_2.png" width="200" />
+  <img src="https://raw.githubusercontent.com/AjayDhattarwal/Browser/refs/heads/main/assets/screenshots/Screenshot_3.png" width="200" />
+  <img src="https://raw.githubusercontent.com/AjayDhattarwal/Browser/refs/heads/main/assets/screenshots/Screenshot_4.png" width="200" />
+  <img src="https://raw.githubusercontent.com/AjayDhattarwal/Browser/refs/heads/main/assets/screenshots/Screenshot_5.png" width="400" />
+  <img src="https://raw.githubusercontent.com/AjayDhattarwal/Browser/refs/heads/main/assets/screenshots/Screenshot_6.png" width="400" />
+  <img src="https://raw.githubusercontent.com/AjayDhattarwal/Browser/refs/heads/main/assets/screenshots/Screenshot_7.png" width="400" />
+  <img src="https://raw.githubusercontent.com/AjayDhattarwal/Browser/refs/heads/main/assets/screenshots/Screenshot_8.png" width="400" />
+  <img src="https://raw.githubusercontent.com/AjayDhattarwal/Browser/refs/heads/main/assets/screenshots/Screenshot_9.png" width="400" />
+  <img src="https://raw.githubusercontent.com/AjayDhattarwal/Browser/refs/heads/main/assets/gif/gif_1.gif" width="200" />
 </p>
 
 
 ## License
 
-[MIT](https://github.com/ajay577/Browser/blob/master/LICENSE)
+[MIT](https://github.com/ajay577/Browser/blob/main/LICENSE)
 
 
 ## 🔗 Links
