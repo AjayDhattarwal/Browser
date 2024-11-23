@@ -92,7 +92,6 @@ class BrowserViewModel(
         viewModelScope.launch {
             mobileString.value = WebView(context).settings.userAgentString
             if (_state.value.regularTabs.isEmpty()) {
-
                 adBlocker.initialize()
 
                 val savedCurrentTabTag = bundleStatePreference.getCurrentTabTag()
@@ -131,6 +130,7 @@ class BrowserViewModel(
                     _state.value = _state.value.copy(
                         regularTabs = mutableTabs,
                         regularTabIndex =  if(currentIndex == -1) mutableTabs.size - 1 else currentIndex,
+                        currentTabTag = mutableTabs[if(currentIndex == -1) mutableTabs.size - 1 else currentIndex].webView.tag.toString()
                     )
                 }else{
                     addTab()
@@ -184,13 +184,15 @@ class BrowserViewModel(
             _state.value = _state.value.copy(
                 incognitoTabs = mutableTabs,
                 incognitoTabIndex = insertionIndex,
-                isIncognitoMode = true
+                isIncognitoMode = true,
+                currentTabTag = newTab.webView.tag.toString()
             )
         }else{
             _state.value = _state.value.copy(
                 regularTabs = mutableTabs,
                 regularTabIndex = insertionIndex,
-                isIncognitoMode = false
+                isIncognitoMode = false,
+                currentTabTag = newTab.webView.tag.toString()
             )
         }
 
@@ -403,15 +405,7 @@ class BrowserViewModel(
             webViewClient = object : WebViewClient() {
 
 
-                override fun doUpdateVisitedHistory(
-                    view: WebView?,
-                    url: String?,
-                    isReload: Boolean
-                ) {
-                    if (isIncognito) {
-                        view?.clearHistory()
-                    }
-                }
+
 
                 override fun onPageFinished(webView: WebView?, url: String?) {
 
@@ -657,6 +651,7 @@ class BrowserViewModel(
     }
 
     fun goBackInCurrentTab() {
+
         _state.value.currentTab?.let { tab ->
             val webView = tab.webView
             if (webView.canGoBack()) {
@@ -881,7 +876,7 @@ class BrowserViewModel(
     }
 
     fun onPaused() {
-        val tab = _state.value.regularTabs[_state.value.regularTabIndex]
+        val tab = _state.value.regularTabs.getOrNull(_state.value.regularTabIndex) ?: return
         val bundle = Bundle()
         val webView = tab.webView
         val index = _state.value.regularTabIndex

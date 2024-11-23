@@ -15,11 +15,15 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.IconButton
@@ -39,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
@@ -59,6 +64,7 @@ import com.ar.idm.ui.navigation.AppDestination
 import com.ar.idm.ui.screen.home.components.BrowserView
 import com.ar.idm.ui.screen.home.components.InWebViewSearch
 import com.ar.idm.ui.screen.home.components.OverlayHomeComposable
+import com.ar.idm.utils.internalFunction.findActivity
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
@@ -83,22 +89,24 @@ fun HomeScreen(
     animatedVisibilityScope: AnimatedVisibilityScope,
     sharedTransitionScope: SharedTransitionScope,
 ) = trace("HomeScreen") {
+
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val graphicsLayer = rememberGraphicsLayer()
+
     val state by browserState.collectAsState()
 
     val fullScreenCallBack by remember { derivedStateOf {  state.currentTab?.callback } }
 
+    val currentTabIsNotNull by remember { derivedStateOf { state.currentTab?.webView != null } }
 
-    val indexedValue by remember {
-        derivedStateOf{
-            state.currentMatchIndex
-        }
-    }
+    val canGoBack by remember { derivedStateOf { state.canGoBack || state.currentTab?.hasParent == true } }
+
+    val sharedTransitionKey by remember { derivedStateOf { "shareBounds${state.currentMatchIndex}_${state.isIncognitoMode}" } }
+
     val showOverlay by remember {
         derivedStateOf {
-            state.currentTab?.showOverlay ?: false
+            state.currentTab?.showOverlay == true
         }
     }
 
@@ -108,12 +116,17 @@ fun HomeScreen(
         }
     }
 
+
+    val isFindingInPage by remember { derivedStateOf { state.isSearching } }
+
+
     var overlapBitmap: ImageBitmap? by remember { mutableStateOf(null) }
 
-    val isFullScreen by remember { derivedStateOf { state.currentTab?.isFullScreen ?: false } }
+    val isFullScreen by remember { derivedStateOf { state.currentTab?.isFullScreen == true } }
 
-    val activity = (context as Activity)
-    val window = activity.window
+
+    val activity = remember { context.findActivity() }
+    val window = remember { activity.window }
 
     LaunchedEffect(isFullScreen) {
         trace("FullScreen"){
@@ -131,12 +144,10 @@ fun HomeScreen(
         }
     }
 
-    if(isFullScreen){
-        BackHandler(enabled = true) {
+    BackHandler(enabled = isFullScreen || canGoBack) {
+        if (isFullScreen) {
             fullScreenCallBack?.onCustomViewHidden()
-        }
-    }else{
-        BackHandler(enabled = state.currentTab?.webView?.canGoBack() == true || state.currentTab?.hasParent == true) {
+        } else if (canGoBack) {
             navigateTabBack()
         }
     }
@@ -148,7 +159,7 @@ fun HomeScreen(
                 .testTag("Home")
                 .fillMaxSize()
                 .sharedBounds(
-                    rememberSharedContentState(key = "shareBounds${state.currentMatchIndex}_${state.isIncognitoMode}"),
+                    rememberSharedContentState(key = sharedTransitionKey),
                     animatedVisibilityScope = animatedVisibilityScope
                 ),
             containerColor =  MaterialTheme.colorScheme.surface,
@@ -157,73 +168,72 @@ fun HomeScreen(
             Column(
                 modifier = Modifier
                     .padding(innerPadding)
-
             ) {
-                if(!showOverlay){
-                    AnimatedVisibility(
-                        visible = !isFullScreen,
-                        enter = fadeIn() + slideInVertically(),
-                        exit = fadeOut() + slideOutVertically(),
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
-                    ) {
-                        if(state.isSearching){
-                            InWebViewSearch(
-                                browserState = browserState,
-                                onSearch = inWebViewSearch,
-                                onDismiss = setFindInPage,
-                                upPressed = upPressedInWebView,
-                                downPressed = downPressedInWebView
-                            )
 
-                        }else{
-                            BrowserTopBar(
-                                modifier = Modifier,
-                                browserState = browserState,
-                                onNavigate = navigate,
-                                onRefresh = onRefresh,
-                                sharedTransitionScope = sharedTransitionScope,
-                                animatedVisibilityScope = animatedVisibilityScope,
-                                onSearch = onSearch,
-                                homeView = homeView
-                            )
-                        }
-                    }
-
-                    BrowserView(
-                        browserState = browserState,
-                        modifier = Modifier
-                            .weight(1f)
-                            .animateContentSize(),
-                    )
-                } else{
-                    trace("overLayDraw"){
-                        Box(
+                Column(modifier = Modifier.weight(1f)) {
+                    if(!showOverlay){
+                        AnimatedVisibility(
+                            visible = !isFullScreen,
+                            enter = fadeIn() + slideInVertically(),
+                            exit = fadeOut() + slideOutVertically(),
                             modifier = Modifier
-                                .weight(1f)
-                                .graphicsLayer()
-                                .drawWithContent {
-                                    graphicsLayer.record {
-                                        this@drawWithContent.drawContent()
-                                    }
-                                    drawLayer(graphicsLayer)
-                                    coroutineScope.launch {
-                                        overlapBitmap = graphicsLayer.toImageBitmap()
-                                    }
-                                }
-
-
                         ) {
-                            OverlayHomeComposable(
-                                modifier = Modifier.fillMaxSize(),
-                                sharedTransitionScope = sharedTransitionScope,
-                                animatedVisibilityScope = animatedVisibilityScope,
-                                onNavigate = navigate,
-                                onSearch = onSearch
-                            )
+                            if(isFindingInPage){
+                                InWebViewSearch(
+                                    browserState = browserState,
+                                    onSearch = inWebViewSearch,
+                                    onDismiss = setFindInPage,
+                                    upPressed = upPressedInWebView,
+                                    downPressed = downPressedInWebView
+                                )
 
+                            }else{
+                                BrowserTopBar(
+                                    modifier = Modifier,
+                                    browserState = browserState,
+                                    onNavigate = navigate,
+                                    onRefresh = onRefresh,
+                                    sharedTransitionScope = sharedTransitionScope,
+                                    animatedVisibilityScope = animatedVisibilityScope,
+                                    onSearch = onSearch,
+                                    homeView = homeView
+                                )
+                            }
                         }
-                    }
 
+                        BrowserView(
+                            browserState = browserState,
+                            modifier = Modifier
+                        )
+                    } else{
+                        trace("overLayDraw"){
+                            Box(
+                                modifier = Modifier
+                                    .graphicsLayer()
+                                    .drawWithContent {
+                                        graphicsLayer.record {
+                                            this@drawWithContent.drawContent()
+                                        }
+                                        drawLayer(graphicsLayer)
+                                        coroutineScope.launch {
+                                            overlapBitmap = graphicsLayer.toImageBitmap()
+                                        }
+                                    }
+
+
+                            ) {
+                                OverlayHomeComposable(
+                                    modifier = Modifier.fillMaxSize(),
+                                    sharedTransitionScope = sharedTransitionScope,
+                                    animatedVisibilityScope = animatedVisibilityScope,
+                                    onNavigate = navigate,
+                                    onSearch = onSearch
+                                )
+
+                            }
+                        }
+
+                    }
                 }
 
                 AnimatedVisibility(
@@ -233,15 +243,13 @@ fun HomeScreen(
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 ) {
                     BrowserBottomBar(
-                        modifier = Modifier.padding(horizontal = 10.dp),
-                        browserState = browserState,
+                        browserState =  browserState ,
                         onNavigateBack = navigateTabBack,
                         onNavigateForward = navigateForward,
                         onShare = { },
                         tabIcon = {
                             IconButton(
                                 onClick = {},
-
                             ) {
                                 Box(
                                     modifier = Modifier
@@ -255,7 +263,7 @@ fun HomeScreen(
                                             shape = RoundedCornerShape(15)
                                         )
                                         .clickable {
-                                            if (state.currentTab?.webView != null) {
+                                            if (currentTabIsNotNull) {
                                                 val imageBitmap =
                                                     if (showOverlay) overlapBitmap else null
                                                 updatePreview(imageBitmap)

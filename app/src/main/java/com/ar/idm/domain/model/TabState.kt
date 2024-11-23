@@ -22,6 +22,9 @@ data class TabState(
     val searchQuery: String? = null,
     val isIncognito: Boolean = false
 ){
+    val tag: String
+        get() = webView.tag.toString()
+
     val favIconUrl: String
         get() = generateFaviconUrl(url)
 

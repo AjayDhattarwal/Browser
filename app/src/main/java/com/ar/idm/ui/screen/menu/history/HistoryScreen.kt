@@ -78,7 +78,7 @@ fun HistoryScreen(
                 contentPadding = PaddingValues(12.dp)
             ) {
                 historyState.forEach { pair ->
-                    stickyHeader {
+                    stickyHeader(key = {pair.first}) {
                         Box(
                             modifier = Modifier.fillMaxWidth().background(
                                 color = MaterialTheme.colorScheme.surface
@@ -93,7 +93,7 @@ fun HistoryScreen(
                         }
                     }
 
-                    items(pair.second){ item->
+                    items(pair.second, key = {item-> item.id}){ item->
                         HistoryItem(
                             modifier = Modifier.animateItem(),
                             image = item.imageUrl,

@@ -11,23 +11,19 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import androidx.documentfile.provider.DocumentFile
-import androidx.work.Data
-import androidx.work.OneTimeWorkRequest
-import com.ar.idm.data.SaveDataWorker
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.ar.idm.utils.download.DownloadBroadcastReceiver
 import com.ar.idm.ui.components.PermissionHandler
+import com.ar.idm.ui.navigation.AppDestination
 import com.ar.idm.ui.navigation.NavigationGraph
+import com.ar.idm.ui.navigation.rememberIDMNavController
 import com.ar.idm.ui.theme.IDMTheme
 import com.ar.idm.viewmodel.BrowserViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
-import org.koin.androidx.viewmodel.factory.KoinViewModelFactory
 
 class MainActivity : ComponentActivity() {
     private val downloadBroadcastReceiver = DownloadBroadcastReceiver()
@@ -41,10 +37,16 @@ class MainActivity : ComponentActivity() {
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
+
         intent?.data?.let { uri ->
+            val key = "browser://browser/"
             val url = uri.toString()
-            webViewViewModel.addTab(url)
+            if(!url.startsWith(key)){
+                webViewViewModel.addTab()
+            }
         }
+
+
         enableEdgeToEdge()
         setContent {
             IDMTheme {
@@ -57,6 +59,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+
     }
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)

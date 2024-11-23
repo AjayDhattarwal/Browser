@@ -5,17 +5,20 @@
 
 package com.ar.idm.ui.navigation
 
+import android.util.Log
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navDeepLink
 import androidx.navigation.toRoute
 import com.ar.idm.ui.screen.home.HomeScreen
 import com.ar.idm.ui.screen.menu.help.HelpAndFeedbackScreen
@@ -32,7 +35,8 @@ import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun NavigationGraph(browserViewModel: BrowserViewModel = koinViewModel()) {
-    val idmNavController = rememberIDMNavController()
+
+    val idmNavController =  rememberIDMNavController()
     val browserState = browserViewModel.state
 
     val downloadViewModel: DownloadViewModel = koinViewModel()
@@ -55,8 +59,8 @@ fun NavigationGraph(browserViewModel: BrowserViewModel = koinViewModel()) {
                 HomeScreen(
                     browserState = browserState,
                     navigateTabBack =  browserViewModel::goBackInCurrentTab,
-                    onTabSelection = {
-                        idmNavController.navigate(AppDestination.Tabs)
+                    onTabSelection = remember{
+                        { idmNavController.navigate(AppDestination.Tabs) }
                     },
                     navigateForward = browserViewModel::goForwardInCurrentTab,
                     onRefresh = browserViewModel::reloadCurrentTab,
@@ -74,6 +78,7 @@ fun NavigationGraph(browserViewModel: BrowserViewModel = koinViewModel()) {
                     sharedTransitionScope = this@SharedTransitionLayout
                 )
 
+
             }
             composable<AppDestination.Tabs> {
                 TabsScreen(
@@ -90,17 +95,22 @@ fun NavigationGraph(browserViewModel: BrowserViewModel = koinViewModel()) {
                     },
                     updateTabState = browserViewModel::updateTabState,
                     animatedVisibilityScope = this@composable,
-                    sharedTransitionScope = this@SharedTransitionLayout
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    navigateBack = idmNavController::upPress
                 )
             }
 
-            composable<AppDestination.Search> { backStackEntry ->
+            composable<AppDestination.Search>(
+                deepLinks = listOf(navDeepLink { uriPattern = "browser://browser/search/{query}" })
+            ) { backStackEntry ->
                 val data: AppDestination.Search = backStackEntry.toRoute()
+                val query = backStackEntry.arguments?.getString("query")
+
                 SearchScreen(
-                    data = data,
+                    data = data.copy(query = query),
                     onSearch = {
                         browserViewModel.search(it)
-                        idmNavController.navigate(AppDestination.Home)
+                        idmNavController.upPress()
                     },
                     navigate = idmNavController::navigate,
                     navigateBack = idmNavController::upPress,

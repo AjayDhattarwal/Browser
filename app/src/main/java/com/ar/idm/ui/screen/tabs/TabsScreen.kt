@@ -43,11 +43,14 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -80,10 +83,13 @@ fun TabsScreen(
     switchTab: (Int) -> Unit,
     updateTabState: (Boolean) -> Unit,
     sharedTransitionScope: SharedTransitionScope,
-    animatedVisibilityScope: AnimatedVisibilityScope
+    animatedVisibilityScope: AnimatedVisibilityScope,
+    navigateBack: () -> Unit
 )  = trace("TabsScreen") {
 
     val state by browserState.collectAsState()
+
+    val isCurrentTabNull by remember { derivedStateOf { state.currentTab == null } }
 
     LaunchedEffect(Unit) {
         if(state.isIncognitoMode){
@@ -94,20 +100,24 @@ fun TabsScreen(
         }
     }
 
-    LaunchedEffect(pagerState.currentPage) {
-        if(pagerState.currentPage == 0){
-            updateTabState(false)
-        } else {
-            updateTabState(true)
+    LaunchedEffect(Unit) {
+        snapshotFlow { pagerState.currentPage }.collect { page ->
+            updateTabState(page != 0)
         }
     }
+
+
     val scope = rememberCoroutineScope()
 
 
 
-    BackHandler(enabled = state.currentTab == null) {
-        scope.launch {
-            pagerState.animateScrollToPage(0)
+    BackHandler {
+        if(isCurrentTabNull){
+            scope.launch {
+                pagerState.animateScrollToPage(0)
+            }
+        }else{
+            navigateBack()
         }
     }
 
@@ -136,7 +146,7 @@ fun TabsScreen(
                     )
                 }
                 TabRow(
-                    selectedTabIndex = pagerState.currentPage,
+                    selectedTabIndex = 0,
                     modifier = Modifier.width(80.dp).align(Alignment.Center),
                     indicator = {},
                     divider =  {}
@@ -222,7 +232,7 @@ fun LazyStaggeredGrid(
             if(isIncognito){ state.incognitoTabIndex } else { state.regularTabIndex }
         }
     }
-    with(sharedTransitionScope) {
+
 
         LazyVerticalStaggeredGrid(
             columns = StaggeredGridCells.Adaptive(180.dp),
@@ -231,33 +241,32 @@ fun LazyStaggeredGrid(
                 .fillMaxSize()
                 .testTag("Grid_of_tabs")
         ) {
-            itemsIndexed(list, key = { _, tabState -> tabState.webView.tag }) { index, tabState ->
+            itemsIndexed(list, key = { _, tabState -> tabState.tag }) { index, tabState ->
                 val color = if(currentTabIndex == index){
                     MaterialTheme.colorScheme.primaryContainer
                 }else{
                     MaterialTheme.colorScheme.surfaceVariant
                 }
+
                 SwipeToDeleteContainer(
                     modifier = Modifier.animateItem(),
                     item = tabState,
                     onRemove = { closeTab(index) },
                 ){
                     TabCard(
-                        modifier = Modifier
-                            .sharedBounds(
-                                rememberSharedContentState(key = "shareBounds${index}_$isIncognito"),
-                                animatedVisibilityScope = animatedVisibilityScope
-                            ),
                         color = color,
                         tabState = tabState,
                         index = index,
                         onClick = { switchTab(index) },
-                        closeTab = { closeTab(index) }
+                        closeTab = { closeTab(index) },
+                        isIncognito = isIncognito,
+                        sharedTransitionScope =  sharedTransitionScope,
+                        animatedVisibilityScope =  animatedVisibilityScope
                     )
                 }
             }
         }
-    }
+
 }
 
 
@@ -265,12 +274,15 @@ fun LazyStaggeredGrid(
 fun TabCard(
     tabState: TabState,
     color: Color,
-    modifier: Modifier,
     index: Int,
     onClick: () -> Unit,
     closeTab: () -> Unit,
+    isIncognito: Boolean,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope
 )  = trace("TabItemTag") {
 
+    val key by remember { mutableStateOf ("shareBounds${index}_$isIncognito" ) }
 
     val favicon by remember { derivedStateOf {
         tabState.favIconUrl
@@ -281,28 +293,32 @@ fun TabCard(
             tabState.title
         }
     }
-
-    Card(
-        modifier = modifier
-            .padding(8.dp),
-        shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(
-            containerColor = color
-        ),
-        border = BorderStroke(1.7.dp, color),
-    ) {
-        Column(
+    with(sharedTransitionScope) {
+        Card(
             modifier = Modifier
-                .fillMaxWidth()
-                .pointerInput(true) {
-                    detectTapGestures(
-                        onTap = {
-                            onClick()
-                        }
-                    )
-                }
+                .sharedBounds(
+                    rememberSharedContentState(key = key),
+                    animatedVisibilityScope = animatedVisibilityScope
+                )
+                .padding(8.dp),
+            shape = MaterialTheme.shapes.medium,
+            colors = CardDefaults.cardColors(
+                containerColor = color
+            ),
+            border = BorderStroke(1.7.dp, color),
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically){
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .pointerInput(true) {
+                        detectTapGestures(
+                            onTap = {
+                                onClick()
+                            }
+                        )
+                    }
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
 
                     Image(
                         painter = rememberAsyncImagePainter(favicon),
@@ -313,59 +329,62 @@ fun TabCard(
                     )
 
 
-                Text(
-                    text = title ?: "Untitled",
-                    style = MaterialTheme.typography.labelSmall,
-                    textAlign = TextAlign.Start,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
-                )
-
-                IconButton(
-                    onClick = closeTab,
-                    modifier = Modifier.size(24.dp)
-                ){
-                    Icon(
-                        imageVector = Icons.Default.Clear,
-                        contentDescription = "Clear",
-                        modifier = Modifier
-                            .padding(end = 10.dp)
+                    Text(
+                        text = title ?: "Untitled",
+                        style = MaterialTheme.typography.labelSmall,
+                        textAlign = TextAlign.Start,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
                     )
+
+                    IconButton(
+                        onClick = closeTab,
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Clear,
+                            contentDescription = "Clear",
+                            modifier = Modifier
+                                .padding(end = 10.dp)
+                        )
+                    }
+
                 }
+                trace("ImagePlaceholder") {
 
-            }
-            trace("ImagePlaceholder") {
-
-                Box(
-                    modifier = Modifier
-                        .height(230.dp)
-                ) {
-                    Image(
-                        bitmap = tabState.preview
-                            ?: Bitmap.createBitmap(
-                                300,
-                                500,
-                                Bitmap.Config.ARGB_8888
-                            ).apply {
-                                eraseColor(
-                                    android.graphics.Color.WHITE
-                                )
-                            }.asImageBitmap(),
-                        contentDescription = "Preview",
+                    Box(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.surface),
-                        contentScale = ContentScale.FillWidth
-                    )
+                            .height(230.dp)
+                    ) {
+                        Image(
+                            bitmap = tabState.preview
+                                ?: Bitmap.createBitmap(
+                                    300,
+                                    500,
+                                    Bitmap.Config.ARGB_8888
+                                ).apply {
+                                    eraseColor(
+                                        android.graphics.Color.WHITE
+                                    )
+                                }.asImageBitmap(),
+                            contentDescription = "Preview",
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.surface),
+                            contentScale = ContentScale.FillWidth
+                        )
 
 
+                    }
                 }
             }
         }
     }
 
 }
+
+
 
 
 

@@ -1,25 +1,18 @@
 package com.ar.idm.ui.screen.menu.bookmarks
 
-import android.app.AlertDialog
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
@@ -36,25 +29,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
-import coil.compose.rememberAsyncImagePainter
 import com.ar.idm.R
 import com.ar.idm.data.local.roomdatabase.bookmarkDb.Bookmark
-import com.ar.idm.di.viewModelModule
 import com.ar.idm.domain.model.BrowserState
 import com.ar.idm.ui.components.AlertDialog
 import com.ar.idm.ui.components.CommonItemFrame
 import com.ar.idm.ui.components.DropDown
 import com.ar.idm.ui.components.TopBar
 import com.ar.idm.ui.navigation.AppDestination
-import com.ar.idm.ui.screen.menu.bookmarks.components.AddCurrentPageCard
+import com.ar.idm.ui.screen.menu.bookmarks.components.CurrentPageCard
 import com.ar.idm.utils.function.generateFaviconUrl
 import com.ar.idm.viewmodel.BookmarkViewModel
 import kotlinx.coroutines.flow.StateFlow
@@ -86,6 +73,16 @@ fun BookmarkScreen(
     var selectedBookmark by remember { mutableStateOf<Bookmark?>(null) }
     var showEditDialog by remember { mutableStateOf(false) }
 
+    val isCurrentBookmark by remember {
+        derivedStateOf{
+            groupedBookmarks.any{
+                it.second.any { bookmark ->
+                    bookmark.url == state.currentTab?.url
+                }
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             TopBar(
@@ -103,21 +100,26 @@ fun BookmarkScreen(
         },
         containerColor =  MaterialTheme.colorScheme.surface,
     ){
-        Column(modifier = Modifier
-            .padding(it)
-            .fillMaxSize()) {
-            AddCurrentPageCard(
-                modifier = Modifier.padding(12.dp),
-                url = state.currentTab?.url,
-                title = state.currentTab?.title,
-                favIconUrl = state.currentTab?.favIconUrl
-            ){
-                bookmarkViewModel.insertBookmark(url = currentTab?.url, title = currentTab?.title )
-            }
+        Column(
+            modifier = Modifier
+                .padding(it)
+                .fillMaxSize()
+        ) {
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 contentPadding = PaddingValues(12.dp)
             ) {
+                item(key = "current-page"){
+                    CurrentPageCard(
+                        modifier = Modifier.padding(12.dp),
+                        url = state.currentTab?.url,
+                        title = state.currentTab?.title,
+                        favIconUrl = state.currentTab?.favIconUrl,
+                        isBookmark = { isCurrentBookmark }
+                    ){
+                        bookmarkViewModel.toggleBookmark(url = currentTab?.url, title = currentTab?.title )
+                    }
+                }
                 groupedBookmarks.forEach { (date, bookmarksForDate) ->
                     item {
                         Box(
@@ -135,7 +137,7 @@ fun BookmarkScreen(
                             )
                         }
                     }
-                    items(bookmarksForDate) { bookmark ->
+                    items(bookmarksForDate, key = {bookmark -> bookmark.url }) { bookmark ->
                         BookmarkItem(
                             bookmark = bookmark,
                             onEdit = {

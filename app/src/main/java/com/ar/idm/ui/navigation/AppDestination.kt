@@ -1,5 +1,6 @@
 package com.ar.idm.ui.navigation
 
+import androidx.room.Query
 import kotlinx.serialization.Serializable
 
 sealed class AppDestination {
@@ -10,7 +11,8 @@ sealed class AppDestination {
     data class Search(
         val url: String? = null,
         val title: String? = null,
-        val favIconUrl: String? = null
+        val favIconUrl: String? = null,
+        val query: String? = null
     ) : AppDestination()
 
 

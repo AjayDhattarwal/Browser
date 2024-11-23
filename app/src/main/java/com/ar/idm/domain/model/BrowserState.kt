@@ -13,6 +13,8 @@ data class BrowserState(
     val isSearching: Boolean = false,
     val isDesktopMode: Boolean = false,
     val isIncognitoMode: Boolean = false,
+
+    val currentTabTag: String = "null"
 ) {
     val isLoading: Boolean
         get() = loadingPercentage < 1f
@@ -28,6 +30,10 @@ data class BrowserState(
             true -> incognitoTabs.getOrNull(incognitoTabIndex)
             false -> regularTabs.getOrNull(regularTabIndex)
         }
+
+    val canGoBack: Boolean
+        get() = currentTab?.webView?.canGoBack() == true
+
 
     val currentTabList: List<TabState>
         get() = when (isIncognitoMode) {

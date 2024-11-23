@@ -10,35 +10,43 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.ar.idm.R
+import com.ar.idm.data.local.roomdatabase.bookmarkDb.Bookmark
 import com.ar.idm.ui.components.CommonCardRowFrame
 
 @Composable
-fun AddCurrentPageCard(
+fun CurrentPageCard(
     modifier: Modifier,
     favIconUrl: String?,
     title: String?,
     url: String?,
     onClick: () -> Unit = {},
-    addToBookmark: () -> Unit = {},
+    isBookmark: () -> Boolean,
+    addToBookmark: () -> Unit = {}
 ){
     val context = LocalContext.current
+
+    val isCurrentBookmark by remember {
+        derivedStateOf{
+            isBookmark()
+        }
+    }
 
     CommonCardRowFrame(
         modifier = modifier
@@ -109,7 +117,7 @@ fun AddCurrentPageCard(
                 onClick = addToBookmark
             ) {
                 Icon(
-                    painter = painterResource(R.drawable.ic_bookmark),
+                    painter = painterResource(if(isCurrentBookmark) R.drawable.ic_bookmark_fill else R.drawable.ic_bookmark),
                     contentDescription = "Add to Bookmark",
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)

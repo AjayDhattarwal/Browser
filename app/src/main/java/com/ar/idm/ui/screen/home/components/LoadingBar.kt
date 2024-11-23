@@ -17,17 +17,14 @@ import kotlinx.coroutines.flow.StateFlow
 @Composable
 fun LoadingBar(
     browserState: StateFlow<BrowserState>,
+    visible: () -> Boolean
 ){
     val state by browserState.collectAsState()
-    val progress by remember {
-        derivedStateOf {
-            state.loadingPercentage
-        }
-    }
 
-    if(state.isLoading){
+
+    if(state.isLoading && visible()){
         LinearProgressIndicator(
-            progress = { progress },
+            progress = { state.loadingPercentage },
             trackColor = MaterialTheme.colorScheme.surface,
             modifier = Modifier
                 .fillMaxWidth()

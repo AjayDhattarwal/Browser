@@ -228,6 +228,8 @@
 
 
 //import java.io.File
+@file:OptIn(InternalAPI::class)
+
 import java.net.URL
 
 //fun main() {
@@ -334,46 +336,114 @@ import java.net.URL
 
 
 
+//import io.ktor.client.*
+//import io.ktor.client.call.*
+//import io.ktor.client.engine.cio.*
+//import io.ktor.client.request.*
+//import io.ktor.client.statement.*
+//import io.ktor.http.*
+//import io.ktor.client.plugins.contentnegotiation.*
+//import io.ktor.client.plugins.logging.*
+//import io.ktor.client.plugins.*
+//import io.ktor.client.request.forms.*
+//import io.ktor.client.plugins.cookies.*
+//import kotlinx.coroutines.runBlocking
+//import java.io.File
+//
+//suspend fun uploadImageToGoogleLens(file: File): HttpResponse {
+//    val client = HttpClient(CIO) {
+//        install(DefaultRequest) {
+//            header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+//        }
+//    }
+//
+//    return client.submitFormWithBinaryData(
+//        url = "https://lens.google.com/v3/upload?hl=en-IN",
+//        formData = formData {
+//            append("encoded_image", file.readBytes(), Headers.build {
+//                append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
+//                append(HttpHeaders.ContentType, "image/jpeg")
+//            })
+////            append("processed_image_dimensions", "239,148")
+//        }
+//    ).also {
+//        println("Status: ${it.status}")
+//        println("Response: ${it.bodyAsText()}")
+//    }
+//}
+//
+//fun main() {
+//    runBlocking {
+//        val file = File("image.jpeg")
+//        uploadImageToGoogleLens(file)
+//    }
+//}
+//
+
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
-import io.ktor.http.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
-import io.ktor.client.plugins.*
-import io.ktor.client.request.forms.*
-import io.ktor.client.plugins.cookies.*
-import kotlinx.coroutines.runBlocking
+import io.ktor.client.request.forms.FormDataContent
+import io.ktor.client.request.forms.formData
+import io.ktor.client.request.forms.submitFormWithBinaryData
+import io.ktor.http.*
+import io.ktor.http.ContentType.MultiPart.FormData
+import io.ktor.serialization.kotlinx.json.*
+import io.ktor.util.InternalAPI
+import io.ktor.utils.io.core.*
+import kotlinx.coroutines.*
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import java.io.File
 
-suspend fun uploadImageToGoogleLens(file: File): HttpResponse {
-    val client = HttpClient(CIO) {
-        install(DefaultRequest) {
-            header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+suspend fun main() {
+    val client = HttpClient(CIO){
+        install(HttpTimeout){
+            requestTimeoutMillis = 20000
+            socketTimeoutMillis = 20000
+            connectTimeoutMillis = 20000
         }
     }
 
-    return client.submitFormWithBinaryData(
-        url = "https://lens.google.com/v3/upload?hl=en-IN",
-        formData = formData {
-            append("encoded_image", file.readBytes(), Headers.build {
-                append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
-                append(HttpHeaders.ContentType, "image/jpeg")
-            })
-//            append("processed_image_dimensions", "239,148")
-        }
-    ).also {
-        println("Status: ${it.status}")
-        println("Response: ${it.bodyAsText()}")
-    }
-}
+    // Specify the file path correctly
+    val filePath = "audio.mp3"
+    val file = File(filePath)
 
-fun main() {
-    runBlocking {
-        val file = File("image.jpeg")
-        uploadImageToGoogleLens(file)
+    // Verify the file exists
+    if (!file.exists()) {
+        println("File does not exist at: $filePath")
+        return
     }
+
+    // Get the file size in bytes
+    val fileSize = file.length()  // This gives the file size in bytes
+
+    println("File size: $fileSize bytes")
+
+//    try {
+//        val response = client.submitFormWithBinaryData(
+//            url = "https://api.doreso.com/humming", //humming //identify
+//            formData = formData {
+//                append("file", file.readBytes(), Headers.build {
+//                    append(HttpHeaders.ContentType, ContentType.Audio.MPEG.toString())
+//                    append(HttpHeaders.ContentDisposition, "filename=${file.name}")
+//                })
+//                append("sample_size", fileSize.toString())  // Use the file size as sample_size
+//            }
+//        )
+//
+//        println("Response: ${response.bodyAsText()}")
+//    } catch (e: Exception) {
+//        println("Request failed: ${e.message}")
+//    } finally {
+//        client.close()
+//    }
+
 }
 

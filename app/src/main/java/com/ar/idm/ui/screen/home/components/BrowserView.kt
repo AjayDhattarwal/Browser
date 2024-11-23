@@ -16,12 +16,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -50,10 +52,18 @@ fun BrowserView(
     val state by browserState.collectAsState()
     val context = LocalContext.current
 
-    val isFullscreen by remember { derivedStateOf { state.currentTab?.isFullScreen ?: false } }
+    val isFullscreen by remember { derivedStateOf { state.currentTab?.isFullScreen == true} }
+
+    val updateRequired by remember { derivedStateOf {
+        if(state.currentTab?.webView?.tag == null){
+            state.currentTabTag
+        }else{
+            state.currentTab?.webView?.tag.toString()
+        }
+    } }
+
 
     var isPlaying by remember { mutableStateOf(true) }
-
 
     val pipReceiver = remember {
         PipActionReceiver(
@@ -69,14 +79,17 @@ fun BrowserView(
             }
         )
     }
-    val filter = IntentFilter().apply {
+    val filter = remember { IntentFilter().apply {
         addAction(PLAY_PAUSE_ACTION)
+    } }
+
+    val actions = remember {
+        actionsPip(context, isPlaying = isPlaying)
     }
 
-    val actions = actionsPip(context, isPlaying = isPlaying)
+    val sdkVersionSatisfies by remember { derivedStateOf { Build.VERSION.SDK_INT < Build.VERSION_CODES.S && isFullscreen } }
 
-
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S && isFullscreen) {
+    if (sdkVersionSatisfies) {
         DisposableEffect(context) {
             val onUserLeaveBehavior: () -> Unit = {
                 context.findActivity()
@@ -95,60 +108,79 @@ fun BrowserView(
                 )
             }
         }
-    } else {
-        Log.i("PiP info", "API does not support PiP")
     }
 
+    val pipModifier = remember {
+        Modifier
+            .onGloballyPositioned { layoutCoordinates ->
+                if (isFullscreen){
+                    val builder = PictureInPictureParams.Builder().setActions(actions)
+                    val componentActivity = context.findActivity()
 
+                    componentActivity.registerReceiver(pipReceiver, filter, Context.RECEIVER_EXPORTED)
 
-    val pipModifier = Modifier
-        .onGloballyPositioned { layoutCoordinates ->
-            if (isFullscreen){
-                val builder = PictureInPictureParams.Builder().setActions(actions)
-                val componentActivity = context.findActivity()
-
-                componentActivity.registerReceiver(pipReceiver, filter, Context.RECEIVER_EXPORTED)
-
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    builder.setAutoEnterEnabled(true)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        builder.setAutoEnterEnabled(true)
+                    }
+                    componentActivity.setPictureInPictureParams(builder.build())
                 }
-                componentActivity.setPictureInPictureParams(builder.build())
             }
-        }
+    }
 
 
     Box(
         modifier = modifier.fillMaxSize()
     ) {
-        key(state.currentTab?.webView?.tag) {
-            AndroidView(
-                factory = {
-                    state.currentTab?.webView?.apply {
-                        setupContentTheming()
-                        this.onResume()
-                        toggleYTControls()
-                    } ?: WebView(it)
-                },
-                update = { webView ->
-                    webView.setupContentTheming()
-                    webView.evaluateJavascript(
-                        "document.querySelector('video').paused;",
-                        { value ->
-                            isPlaying = (value == "false")
-                        }
-                    )
-
-                },
-                modifier = pipModifier.fillMaxSize()
-
-            )
-            if(!isFullscreen){
-                LoadingBar(browserState = browserState)
+        BrowserWebView(
+            browserState = browserState,
+            pipModifier = pipModifier,
+            updateRequired = { updateRequired },
+            isFullScreen = {!isFullscreen},
+            isPlaying = {
+                isPlaying = it
             }
-        }
-
+        )
     }
 }
+
+
+@Composable
+fun BrowserWebView(
+    browserState: StateFlow<BrowserState>,
+    updateRequired: () -> String,
+    isFullScreen : () -> Boolean,
+    isPlaying: (Boolean) -> Unit,
+    pipModifier: Modifier
+) = trace("BrowserWebView") {
+
+    val state by browserState.collectAsState()
+
+    key(updateRequired()) {
+        AndroidView(
+            factory = {
+                state.currentTab?.webView?.apply {
+                    setupContentTheming()
+                    this.onResume()
+                    toggleYTControls()
+                } ?: WebView(it)
+            },
+            update = { webView ->
+                webView.setupContentTheming()
+                webView.evaluateJavascript(
+                    "document.querySelector('video').paused;",
+                    { value ->
+                        isPlaying(value == "false")
+                    }
+                )
+
+            },
+            modifier = pipModifier.fillMaxSize(),
+        )
+        LoadingBar(browserState = browserState, visible = isFullScreen)
+    }
+}
+
+
 
 @SuppressLint("RequiresFeature")
 fun WebView.setupContentTheming() {
@@ -157,7 +189,7 @@ fun WebView.setupContentTheming() {
     if (isDarkTheme) {
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
         if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {
-            Log.d("TAG", "setupContentTheming for true: $isDarkTheme")
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 settings.isAlgorithmicDarkeningAllowed = true
             }
@@ -170,7 +202,7 @@ fun WebView.setupContentTheming() {
     } else {
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
         if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {
-            Log.d("TAG", "setupContentTheming for false: $isDarkTheme")
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 settings.isAlgorithmicDarkeningAllowed = false
             }

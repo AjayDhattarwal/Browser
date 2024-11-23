@@ -10,7 +10,7 @@ Browser is a lightweight, open-source web browsing app powered by Android's WebV
 
 ## Download
 
-[![GitHub](https://img.shields.io/badge/GitHub-000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/AjayDhattarwal/Browser/app/release)
+[![GitHub](https://img.shields.io/badge/GitHub-000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/AjayDhattarwal/Browser/blob/main/app/release/app-release.apk)
 
 [![Telegram](https://img.shields.io/badge/Telegram-0088CC?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/your_telegram_channel)
 
@@ -37,6 +37,7 @@ Browser is a lightweight, open-source web browsing app powered by Android's WebV
   <img src="https://raw.githubusercontent.com/AjayDhattarwal/Browser/refs/heads/main/assets/screenshots/Screenshot_7.png" width="200" />
   <img src="https://raw.githubusercontent.com/AjayDhattarwal/Browser/refs/heads/main/assets/screenshots/Screenshot_8.png" width="200" />
   <img src="https://raw.githubusercontent.com/AjayDhattarwal/Browser/refs/heads/main/assets/screenshots/Screenshot_9.png" width="200" />
+  <img src="https://raw.githubusercontent.com/AjayDhattarwal/Browser/refs/heads/main/assets/screenshots/Screenshot_10.png" width="200" />
 <!--   <img src="https://raw.githubusercontent.com/AjayDhattarwal/Browser/refs/heads/main/assets/gif/gif_1.gif" width="200" /> -->
 </p>
 
