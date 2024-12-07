@@ -6,14 +6,15 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.kotlin.serialization)
     id("com.google.devtools.ksp")
+    id ("kotlin-parcelize")
 }
 
 android {
-    namespace = "com.ar.idm"
+    namespace = "com.ar.webwiz"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.ar.idm"
+        applicationId = "com.ar.webwiz"
         minSdk = 29
         //noinspection EditedTargetSdkVersion
         targetSdk = 35
@@ -133,6 +134,8 @@ dependencies {
 
     // For interop APIs with Material 3
     implementation("androidx.glance:glance-material3:1.1.1")
+
+    implementation("androidx.core:core-splashscreen:1.0.1")
 
 
 }

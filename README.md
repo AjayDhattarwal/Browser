@@ -44,7 +44,7 @@ Browser is a lightweight, open-source web browsing app powered by Android's WebV
 
 ## License
 
-[MIT](https://github.com/ajay577/Browser/blob/main/LICENSE)
+[MIT](https://github.com/AjayDhattarwal/Browser/blob/main/LICENSE)
 
 
 ## 🔗 Links

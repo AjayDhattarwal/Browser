@@ -4,5 +4,9 @@
         <item name="android:statusBarColor">@color/transparent</item>
     </style>
 
+    <style name="Theme.MyApp.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/transparent</item>
+        <item name="windowSplashScreenAnimationDuration">2000</item>
+    </style>
 
 </resources>
