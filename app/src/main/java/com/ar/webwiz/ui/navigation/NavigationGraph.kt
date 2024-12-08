@@ -75,6 +75,7 @@ fun NavigationGraph(browserViewModel: BrowserViewModel = koinViewModel()) {
                     downPressedInWebView = browserViewModel::downPressedInWebView,
                     hideDistractions = browserViewModel::hideDistractions,
                     toggleDistractionSelect = browserViewModel::toggleDistractionSelect,
+                    toggleReaderMode = browserViewModel::toggleReaderMode,
                     animatedVisibilityScope = this@composable,
                     sharedTransitionScope = this@SharedTransitionLayout
                 )

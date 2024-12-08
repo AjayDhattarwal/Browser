@@ -90,6 +90,7 @@ fun HomeScreen(
     downPressedInWebView: () -> Unit,
     hideDistractions: () -> Unit,
     toggleDistractionSelect: () -> Unit,
+    toggleReaderMode: () -> Unit,
     animatedVisibilityScope: AnimatedVisibilityScope,
     sharedTransitionScope: SharedTransitionScope,
 ) = trace("HomeScreen") {
@@ -201,7 +202,8 @@ fun HomeScreen(
                                     onSearch = onSearch,
                                     homeView = homeView,
                                     toggleDistractionSelect = toggleDistractionSelect,
-                                    hideDistractions = hideDistractions
+                                    hideDistractions = hideDistractions,
+                                    toggleReaderMode = toggleReaderMode
                                 )
                             }
                         }

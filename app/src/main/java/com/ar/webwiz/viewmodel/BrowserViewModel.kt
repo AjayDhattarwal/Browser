@@ -48,6 +48,7 @@ import com.ar.webwiz.utils.webview.hideDistraction
 import com.ar.webwiz.utils.webview.implementDistractionControl
 import com.ar.webwiz.utils.webview.saveUserData
 import com.ar.webwiz.utils.webview.toggleDistractionSelection
+import com.ar.webwiz.utils.webview.toggleReadMode
 import com.ar.webwiz.utils.webview.youtubeAdBlockingScript
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -873,6 +874,13 @@ class BrowserViewModel(
         )
     }
 
+    fun toggleReaderMode(){
+        _state.value.currentTab?.webView?.toggleReadMode(context){
+            _state.value = _state.value.copy(
+                isReaderMode = it
+            )
+        }
+    }
 
 
     private fun handleIntentUrl(view: WebView?, url: String) {

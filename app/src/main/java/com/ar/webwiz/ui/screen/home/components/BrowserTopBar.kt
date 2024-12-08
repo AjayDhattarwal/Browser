@@ -10,10 +10,8 @@ import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOut
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.foundation.layout.Arrangement
@@ -21,10 +19,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -56,7 +51,6 @@ import androidx.compose.ui.draganddrop.mimeTypes
 import androidx.compose.ui.draganddrop.toAndroidDragEvent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.ar.webwiz.R
 import com.ar.webwiz.domain.model.BrowserState
@@ -78,12 +72,15 @@ fun BrowserTopBar(
     onSearch: (String) -> Unit,
     homeView: (Boolean) -> Unit,
     toggleDistractionSelect: () -> Unit,
-    hideDistractions: () -> Unit
+    hideDistractions: () -> Unit,
+    toggleReaderMode: () -> Unit
 ) {
 
     val state by browserState.collectAsState()
 
     val isDistractionEnabled by remember { derivedStateOf { state.isDSelectionEnabled } }
+
+    val isReaderModeEnabled by remember { derivedStateOf { state.isReaderMode } }
 
     val url by remember { derivedStateOf{
         state.currentTab?.url ?: ""
@@ -150,15 +147,14 @@ fun BrowserTopBar(
                             modifier = Modifier.size(20.dp),
                         ) {
                             Icon(
-                                painter = painterResource(R.drawable.page_info),
+                                painter = painterResource(if(isReaderModeEnabled) R.drawable.ic_article_fill else R.drawable.page_info),
                                 contentDescription = "menu",
-                                tint = Color.DarkGray
+                                tint = if(isReaderModeEnabled) Color.Gray else Color.DarkGray.copy(0.8f)
                             )
                         }
                     }
                 },
                 content = {
-
 
                         AnimatedVisibility(
                             isDistractionEnabled,
@@ -274,13 +270,13 @@ fun BrowserTopBar(
 
             DropdownMenuItem(
                 onClick = {
-//                    onReadMode()
+                    toggleReaderMode()
                     expandedTopMenu = false
                 },
-                text = { Text(text = "Reader Mode") },
+                text = { Text(text = if(isReaderModeEnabled) "Hide Article View " else "Show Article View") },
                 leadingIcon = {
                     Icon(
-                        painter = painterResource(id = R.drawable.ic_file),
+                        painter = painterResource( if(isReaderModeEnabled) R.drawable.ic_article_fill else R.drawable.ic_article),
                         contentDescription = "Reader Mode"
                     )
                 }

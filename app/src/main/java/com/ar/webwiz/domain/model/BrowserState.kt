@@ -16,7 +16,8 @@ data class BrowserState(
     val isIncognitoMode: Boolean = false,
 
     val currentTabTag: String = "null",
-    val isDSelectionEnabled: Boolean = false
+    val isDSelectionEnabled: Boolean = false,
+    val isReaderMode: Boolean = false
 ) {
     val isLoading: Boolean
         get() = loadingPercentage < 1f

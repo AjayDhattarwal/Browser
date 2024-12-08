@@ -1,12 +1,17 @@
 package com.ar.webwiz.utils.webview
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.webkit.WebSettings
 import android.webkit.WebView
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
@@ -506,4 +511,144 @@ fun WebView.toggleDistractionSelection(callback: (Boolean) -> Unit){
 
 fun WebView.hideDistraction(){
     evaluateJavascript("window.hideSelected();", null)
+}
+
+fun WebView.initializeReaderMode(context: Context, onInitialized: () -> Unit){
+    val jsScript =  context.assets.open("reader.js").bufferedReader().use { it.readText() }
+    val jsScript2 = """
+        (function () {
+            // Define a variable to store the original content
+            if (!window.originalContent) {
+                window.originalContent = document.body.innerHTML;
+            }
+
+            // Define a variable to track the reader mode state
+            window.readerModeActive = window.readerModeActive || false;
+
+            // Define the toggleReaderMode function
+            window.toggleReaderMode = function () {
+                if (window.readerModeActive) {
+                    // Deactivate Reader Mode: Restore the original content
+                    document.body.innerHTML = window.originalContent;
+                    window.readerModeActive = false;
+                    console.log('Reader Mode Deactivated');
+                    return false; // Return false to indicate Reader Mode is inactive
+                } else {
+                    // Activate Reader Mode
+                    const documentClone = document.cloneNode(true);
+                    const article = new Readability(documentClone).parse();
+
+                    if (article && article.content) {
+                        // Save the current content in case it's not already saved
+                        if (!window.originalContent) {
+                            window.originalContent = document.body.innerHTML;
+                        }
+
+                        const readerContainer = document.createElement('div');
+                        readerContainer.style.fontFamily = `'Georgia', serif`;
+                        readerContainer.style.fontSize = '20px';
+                        readerContainer.style.lineHeight = '1.8';
+                        readerContainer.style.color = '#C6C4C4';
+                        readerContainer.style.backgroundColor = '#2B2A2A';
+                        readerContainer.style.padding = '40px';
+                        readerContainer.style.maxWidth = '800px';
+                        readerContainer.style.margin = '50px auto';
+                        readerContainer.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.3)';
+                        readerContainer.id = 'reader-container';
+
+                        const title = document.createElement('h1');
+                        title.textContent = article.title || 'Untitled Article';
+                        title.style.fontSize = '28px';
+                        title.style.color = '#eee';
+                        readerContainer.appendChild(title);
+
+                        const content = document.createElement('div');
+                        content.innerHTML = article.content;
+                        content.querySelectorAll('img').forEach(img => img.remove());
+                        readerContainer.appendChild(content);
+
+                        const themeButton = document.createElement('button');
+                        themeButton.innerHTML = '🌙'; // Start in dark mode
+                        themeButton.style.position = 'fixed';
+                        themeButton.style.top = '20px';
+                        themeButton.style.right = '20px';
+                        themeButton.style.padding = '10px';
+                        themeButton.style.fontSize = '24px';
+                        themeButton.style.cursor = 'pointer';
+                        themeButton.style.border = 'none';
+                        themeButton.style.borderRadius = '50%';
+                        themeButton.style.boxShadow = '0 2px 5px rgba(0, 0, 0, 0.2)';
+                        themeButton.style.backgroundColor = '#333';
+                        themeButton.style.color = '#fff';
+                        themeButton.id = 'theme-switch';
+
+                        let darkMode = true; // Start in dark mode by default
+
+                        themeButton.addEventListener('click', () => {
+                            darkMode = !darkMode;
+
+                            if (darkMode) {
+                                readerContainer.style.color = '#C6C4C4';
+                                readerContainer.style.backgroundColor = '#2B2A2A';
+                                document.body.style.backgroundColor = '#151515';
+                                title.style.color = '#eee';
+                                content.querySelectorAll('p, a, h1, h2, h3, h4, h5, h6').forEach(el => {
+                                    el.style.color = el.tagName === 'A' ? '#2955DE' : '#DDDDDD';
+                                });
+                                themeButton.innerHTML = '🌙';
+                            } else {
+                                readerContainer.style.color = '#333';
+                                readerContainer.style.backgroundColor = '#f9f9f9';
+                                document.body.style.backgroundColor = '#ffff';
+                                title.style.color = '#222';
+                                content.querySelectorAll('p, a, h1, h2, h3, h4, h5, h6').forEach(el => {
+                                    el.style.color = el.tagName === 'A' ? '#1a73e8' : '#333';
+                                });
+                                themeButton.innerHTML = '☀️';
+                            }
+                        });
+
+                        document.body.innerHTML = '';
+                        document.body.style.backgroundColor = '#000';
+                        document.body.appendChild(themeButton);
+                        document.body.appendChild(readerContainer);
+
+                        window.readerModeActive = true;
+                        console.log('Reader Mode Activated');
+                        return true; // Return true to indicate Reader Mode is active
+                    } else {
+                        console.error('Failed to parse the article content.');
+                        return false; // Return false if activation failed
+                    }
+                }
+            };
+        })();
+
+    """.trimIndent()
+    evaluateJavascript(jsScript, null)
+    evaluateJavascript(jsScript2){
+        onInitialized()
+    }
+}
+
+fun WebView.toggleReadMode(context: Context, callback: (Boolean) -> Unit){
+
+    val checkScript = "typeof window.toggleReaderMode !== 'undefined';"
+    evaluateJavascript(checkScript) { isInitialized ->
+        if (isInitialized.toBoolean()) {
+            evaluateJavascript("window.toggleReaderMode();"){ result ->
+                val isReadModeEnabled = result?.toBoolean() ?: false
+                callback(isReadModeEnabled)
+            }
+        } else {
+            initializeReaderMode(context){
+                evaluateJavascript("window.toggleReaderMode();") { result ->
+                    val isReadModeEnabled = result?.toBoolean() ?: false
+                    callback(isReadModeEnabled)
+                }
+            }
+
+        }
+    }
+
 }
